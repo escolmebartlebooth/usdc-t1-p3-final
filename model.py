@@ -1,23 +1,107 @@
-""" behvioural cloning model """
+"""
+    behvioural cloning model
+    project 3 of udacity self driving cars
+    built in March 2018
+    David Escolme
+"""
 
-# imports
+# imports section
+import pandas as pd
+import numpy as np
 import cv2
 import csv
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+import random
 from keras.layers import Activation, Dense, Flatten, Lambda, Cropping2D
 from keras.layers import Convolution2D
 from keras.layers import MaxPooling2D
 from keras.models import Sequential
-import numpy as np
 
-# global file locations
+
+# globals
 FILE_DIR = "../data/"
 DATA_FILE = "driving_log.csv"
 CORRECTED_PATH = FILE_DIR + "IMG/"
 
-# update this value if path info is windows (w) \ or linux (l) /
+# if using paths like this \ use 'w' else use 'l'
 FILE_FROM = "l"
+
+# parameters for training
+NB_EPOCHS = 3
+BATCH_SIZE = 126
+
+
+def flip_image(img, angle):
+    """
+        apply a horizontal flip transformation
+        adjust steering angle for flip
+        accepts: an img and a steering angle
+        returns: a flipped image and new angle
+    """
+    return cv2.flip(img, 1), angle * -1
+
+
+def warp_image(img, angle):
+    """
+        applies a warp on image
+        calculates new angle
+    """
+    h, w, c = img.shape
+
+    WIDTH_SHIFT_RANGE = 100
+    HEIGHT_SHIFT_RANGE = 40
+
+    # Translation
+    tx = WIDTH_SHIFT_RANGE * np.random.uniform() - WIDTH_SHIFT_RANGE / 2
+    ty = HEIGHT_SHIFT_RANGE * np.random.uniform() - HEIGHT_SHIFT_RANGE / 2
+    angle = angle + tx / WIDTH_SHIFT_RANGE * 2 * .2
+
+    transform_matrix = np.float32([[1, 0, tx],
+                                   [0, 1, ty]])
+
+    warped_image = cv2.warpAffine(img, transform_matrix, (w, h))
+
+    return warped_image, angle
+
+
+def img_generator(X, batch_size=32, validate=False):
+
+    sample_size = len(X)
+
+    while 1:
+        shuffle(X)
+
+        for offset in range(0, sample_size, batch_size):
+
+            batch_samples = X[offset:offset+batch_size]
+
+            X_train = []
+            y_train = []
+
+            for index, item in batch_samples.iterrows():
+                # create data
+                choice = random.choice([('center',0), ('left',0.25), ('right',-0.25)])
+                img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
+                img = cv2.imread(img_path)
+                angle = item['steering']+choice[1]
+                if item['steering'] == 0:
+                    # do something
+                    keep_prob = random.random()
+                    if keep_prob < 0.9:
+                        # get warped image 90% of time
+                        img, angle = warp_image(img, angle)
+                else:
+                    prob_image = random.random()
+                    if prob_image < 0.3:
+                        img, angle = warp_image(img, angle)
+                    elif prob_image < 0.6:
+                        img, angle = flip_image(img, angle)
+
+                X_train.append(img)
+                y_train.append(angle)
+
+            yield shuffle(np.array(X_train), np.array(y_train))
 
 
 def read_data_from_file():
@@ -153,9 +237,9 @@ def gen_training_model(X_train, X_valid):
     """ function to train model """
 
     # create data generators
-    batch_size = 32
-    X_gen_train = generate_data(X_train, FILE_FROM, batch_size=batch_size)
-    X_gen_valid = generate_data(X_valid, FILE_FROM, batch_size=batch_size)
+    X_gen_train = img_generator(X_train, batch_size=BATCH_SIZE)
+    X_gen_valid = img_generator(X_valid, batch_size=BATCH_SIZE,
+                                validate=True)
 
     model = Sequential()
     model.add(Lambda(lambda x: x/255.0 - 0.5,
@@ -173,14 +257,16 @@ def gen_training_model(X_train, X_valid):
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
-                        samples_per_epoch=len(X_train) * 6,
-                        nb_epoch=3, validation_data=X_gen_valid,
-                        nb_val_samples=len(X_valid) * 6)
+                        samples_per_epoch=len(X_train),
+                        nb_epoch=NB_EPOCHS, validation_data=X_gen_valid,
+                        nb_val_samples=len(X_valid))
     model.save("model.h5")
 
 
 if __name__ == "__main__":
-    train_data, validation_data = read_data_from_file()
+    #train_data, validation_data = read_data_from_file()
     #features, measurements = transform_data(train_data, FILE_FROM)
     #training_model(features, measurements)
+    df = pd.read_csv(FILE_DIR+DATA_FILE)
+    train_data, validation_data = train_test_split(df, test_size=0.2)
     gen_training_model(train_data, validation_data)
