@@ -89,7 +89,7 @@ def img_generator(X, batch_size=32, validate=False):
                 if item['steering'] == 0:
                     # do something
                     keep_prob = random.random()
-                    if keep_prob < 0.91:
+                    if keep_prob < 0.85:
                         # get warped image 90% of time
                         img, angle = warp_image(img, angle)
                 else:
