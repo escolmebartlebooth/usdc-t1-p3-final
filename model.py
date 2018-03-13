@@ -258,10 +258,10 @@ def gen_training_model(X_train, X_valid):
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
-                                  samples_per_epoch=len(X_train)*3,
+                                  samples_per_epoch=len(X_train)*6,
                                   nb_epoch=NB_EPOCHS,
                                   validation_data=X_gen_valid,
-                                  nb_val_samples=len(X_valid)*3)
+                                  nb_val_samples=len(X_valid)*6)
     model.save("model.h5")
 
 
