@@ -81,7 +81,8 @@ def img_generator(X, batch_size=32, validate=False):
 
             for index, item in batch_samples.iterrows():
                 # create data
-                choice = random.choice([('center',0), ('left',0.25), ('right',-0.25)])
+                choice = random.choice([('center', 0), ('left', 0.25),
+                                       ('right', -0.25)])
                 img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
                 img = cv2.imread(img_path)
                 angle = item['steering']+choice[1]
@@ -257,16 +258,17 @@ def gen_training_model(X_train, X_valid):
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
-                        samples_per_epoch=len(X_train),
-                        nb_epoch=NB_EPOCHS, validation_data=X_gen_valid,
-                        nb_val_samples=len(X_valid))
+                                  samples_per_epoch=len(X_train)*3,
+                                  nb_epoch=NB_EPOCHS,
+                                  validation_data=X_gen_valid,
+                                  nb_val_samples=len(X_valid)*3)
     model.save("model.h5")
 
 
 if __name__ == "__main__":
-    #train_data, validation_data = read_data_from_file()
-    #features, measurements = transform_data(train_data, FILE_FROM)
-    #training_model(features, measurements)
+    # train_data, validation_data = read_data_from_file()
+    # features, measurements = transform_data(train_data, FILE_FROM)
+    # training_model(features, measurements)
     df = pd.read_csv(FILE_DIR+DATA_FILE)
     train_data, validation_data = train_test_split(df, test_size=0.2)
     gen_training_model(train_data, validation_data)
