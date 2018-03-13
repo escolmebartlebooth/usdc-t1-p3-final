@@ -28,7 +28,7 @@ CORRECTED_PATH = FILE_DIR + "IMG/"
 FILE_FROM = "l"
 
 # parameters for training
-NB_EPOCHS = 3
+NB_EPOCHS = 10
 BATCH_SIZE = 126
 
 
@@ -258,10 +258,10 @@ def gen_training_model(X_train, X_valid):
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
-                                  samples_per_epoch=len(X_train)*6,
+                                  samples_per_epoch=len(X_train)*3,
                                   nb_epoch=NB_EPOCHS,
                                   validation_data=X_gen_valid,
-                                  nb_val_samples=len(X_valid)*6)
+                                  nb_val_samples=len(X_valid)*3)
     model.save("model.h5")
 
 
