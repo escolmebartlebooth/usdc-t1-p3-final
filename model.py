@@ -4,6 +4,7 @@
 import cv2
 import csv
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 from keras.layers import Activation, Dense, Flatten, Lambda, Cropping2D
 from keras.layers import Convolution2D
 from keras.layers import MaxPooling2D
