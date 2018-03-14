@@ -21,7 +21,7 @@ from keras.models import Sequential
 
 # globals
 FILE_DIR = "../data/"
-DATA_FILE = "driving_log.csv"
+DATA_FILE = "m_driving_log.csv"
 CORRECTED_PATH = FILE_DIR + "IMG/"
 
 # if using paths like this \ use 'w' else use 'l'
@@ -83,7 +83,8 @@ def img_generator(X, batch_size=32, validate=False):
                 # create data
                 choice = random.choice([('center', 0), ('left', 0.25),
                                        ('right', -0.25)])
-                img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
+                # img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
+                img_path = FILE_DIR+item[choice[0]].lstrip()
                 img = cv2.imread(img_path)
                 angle = item['steering']+choice[1]
                 if item['steering'] == 0:
