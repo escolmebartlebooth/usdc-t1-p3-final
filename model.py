@@ -80,25 +80,30 @@ def img_generator(X, batch_size=32, validate=False):
             y_train = []
 
             for index, item in batch_samples.iterrows():
-                # create data
-                choice = random.choice([('center', 0), ('left', 0.25),
-                                       ('right', -0.25)])
-                # img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
-                img_path = FILE_DIR+item[choice[0]].lstrip()
-                img = cv2.imread(img_path)
-                angle = item['steering']+choice[1]
-                if item['steering'] == 0:
-                    # do something
-                    keep_prob = random.random()
-                    if keep_prob < 0.89:
-                        # get warped image 90% of time
-                        img, angle = warp_image(img, angle)
+                # create data - if validate just pass the center image
+                if validate == True:
+                    img_path = FILE_DIR+item['center'].lstrip()
+                    img = cv2.imread(img_path)
+                    angle = item['steering']
                 else:
-                    prob_image = random.random()
-                    if prob_image < 0.3:
-                        img, angle = warp_image(img, angle)
-                    elif prob_image < 0.6:
-                        img, angle = flip_image(img, angle)
+                    choice = random.choice([('center', 0), ('left', 0.25),
+                                           ('right', -0.25)])
+                    # img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
+                    img_path = FILE_DIR+item[choice[0]].lstrip()
+                    img = cv2.imread(img_path)
+                    angle = item['steering']+choice[1]
+                    if item['steering'] == 0:
+                        # do something
+                        keep_prob = random.random()
+                        if keep_prob < 0.89:
+                            # get warped image 90% of time
+                            img, angle = warp_image(img, angle)
+                    else:
+                        prob_image = random.random()
+                        if prob_image < 0.3:
+                            img, angle = warp_image(img, angle)
+                        elif prob_image < 0.6:
+                            img, angle = flip_image(img, angle)
 
                 X_train.append(img)
                 y_train.append(angle)
