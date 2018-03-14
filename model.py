@@ -28,8 +28,8 @@ CORRECTED_PATH = FILE_DIR + "IMG/"
 FILE_FROM = "l"
 
 # parameters for training
-NB_EPOCHS = 3
-BATCH_SIZE = 126
+NB_EPOCHS = 8
+BATCH_SIZE = 64
 
 
 def flip_image(img, angle):
