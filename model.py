@@ -28,8 +28,8 @@ CORRECTED_PATH = FILE_DIR + "IMG/"
 FILE_FROM = "l"
 
 # parameters for training
-NB_EPOCHS = 8
-BATCH_SIZE = 64
+NB_EPOCHS = 4
+BATCH_SIZE = 128
 
 
 def flip_image(img, angle):
@@ -95,7 +95,7 @@ def img_generator(X, batch_size=32, validate=False):
                     if item['steering'] == 0:
                         # do something
                         keep_prob = random.random()
-                        if keep_prob < 0.91:
+                        if keep_prob < 0.89:
                             # get warped image 90% of time
                             img, angle = warp_image(img, angle)
                     else:
