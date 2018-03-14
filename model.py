@@ -95,7 +95,7 @@ def img_generator(X, batch_size=32, validate=False):
                     if item['steering'] == 0:
                         # do something
                         keep_prob = random.random()
-                        if keep_prob < 0.3:
+                        if keep_prob < 0.9:
                             # get warped image 90% of time
                             img, angle = warp_image(img, angle)
                     else:
@@ -247,7 +247,7 @@ def gen_training_model(X_train, X_valid):
     # create data generators
     X_gen_train = img_generator(X_train, batch_size=BATCH_SIZE)
     X_gen_valid = img_generator(X_valid, batch_size=BATCH_SIZE,
-                                validate=True)
+                                validate=False)
 
     model = Sequential()
     model.add(Lambda(lambda x: x/255.0 - 0.5,
