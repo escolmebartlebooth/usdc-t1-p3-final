@@ -5,7 +5,7 @@
     David Escolme
 """
 
-# imports section
+# imports
 import sys
 import pandas as pd
 import numpy as np
@@ -23,29 +23,35 @@ from keras.models import Sequential
 # globals
 FILE_DIR = "../data/"
 DATA_FILE = "m_driving_log.csv"
-CORRECTED_PATH = FILE_DIR + "IMG/"
 
-# if using paths like this \ use 'w' else use 'l'
-FILE_FROM = "l"
 
 # parameters for training
 NB_EPOCHS = 5
 BATCH_SIZE = 32
 
+
 def flip_image(img, angle):
     """
-        apply a horizontal flip transformation
+        apply a horizontal flip transformation and
         adjust steering angle for flip
-        accepts: an img and a steering angle
-        returns: a flipped image and new angle
+
+        Args:
+            img: an image
+            angle: a steering angle
+
+        Returns: a flipped image and new angle
     """
     return cv2.flip(img, 1), angle * -1
 
 
 def warp_image(img, angle):
     """
-        applies a warp on image
-        calculates new angle
+        applies a warp on image and calculates new angle
+        Args:
+            img: an image
+            angle: the steering angle
+        Returns:
+            a warped image with adjusted angle
     """
     h, w, c = img.shape
 
@@ -68,7 +74,8 @@ def warp_image(img, angle):
 def read_data_from_file():
     """ function to read in image data from csv
         and to correct for image folder
-        returns a list of images for use in training
+        Returns:
+            a list of images for use in training
     """
 
     data_list = []
@@ -85,7 +92,15 @@ def read_data_from_file():
     return data_list
 
 
-def transform_data(X, file_from="l"):
+def transform_data(X):
+    """
+        used to provide augmented data to non generator model
+        Args:
+            X: assumed to be an array
+        Returns:
+            numpy arrays of Images and Angles
+    """
+
     features = []
     measurements = []
 
@@ -108,7 +123,7 @@ def transform_data(X, file_from="l"):
     for feature, measurement in zip(features, measurements):
         aug_features.append(feature)
         aug_measurements.append(measurement)
-        # now also add a flipped image
+        # now also add a flipped image for every other image
         if i % 2 == 0:
             aug_features.append(cv2.flip(feature, 1))
             aug_measurements.append(measurement*-1.0)
@@ -117,10 +132,17 @@ def transform_data(X, file_from="l"):
     return np.array(aug_features), np.array(aug_measurements)
 
 
-def generate_data(X, file_from="l", batch_size=32, validate=False):
+def generate_data(X, batch_size=32, validate=False):
     """
         generator function for training and validation data
         this adds more non zero angle images
+        this version mimics the first training model data
+        Args:
+            X: Image and Angle pandas dataframe
+            batch_size: batch size for optimisation
+            validate: whether the generator is used for validation
+        Returns:
+            yields numpy batches of images and angles
     """
 
     sample_size = len(X)
@@ -140,7 +162,7 @@ def generate_data(X, file_from="l", batch_size=32, validate=False):
 
             # loop the batch
             for index, item in batch_samples.iterrows():
-                # add centre image for zero angle
+                # add all camera images with corrected angle
                 for i in range(3):
                     if i == 0:
                         img_path = 'center'
@@ -151,8 +173,10 @@ def generate_data(X, file_from="l", batch_size=32, validate=False):
                     else:
                         img_path = 'right'
                         correction_factor = -0.25
-                    features.append(cv2.imread(FILE_DIR+item[img_path].lstrip()))
-                    measurements.append(float(item['steering'])+correction_factor)
+                    features.append(cv2.imread(FILE_DIR +
+                                               item[img_path].lstrip()))
+                    measurements.append(float(item['steering']) +
+                                        correction_factor)
 
             # now build augmented images
             aug_features, aug_measurements = [], []
@@ -168,14 +192,27 @@ def generate_data(X, file_from="l", batch_size=32, validate=False):
 
 
 def img_generator(X, batch_size=32, validate=False):
+    """
+        generator function for training and validation data
+        this adds more non zero angle images
+        this version uses random generation to balance the data
+        Args:
+            X: Image and Angle pandas dataframe
+            batch_size: batch size for optimisation
+            validate: whether the generator is used for validation
+        Returns:
+            yields numpy batches of images and angles
+    """
 
     sample_size = len(X)
 
+    # run forever
     while 1:
         shuffle(X)
 
+        # slice the shuffled data
         for offset in range(0, sample_size, batch_size):
-
+            # create a batch
             batch_samples = X[offset:offset+batch_size]
 
             X_train = []
@@ -183,31 +220,33 @@ def img_generator(X, batch_size=32, validate=False):
 
             for index, item in batch_samples.iterrows():
                 # create data - if validate just pass the center image
-                if validate == True:
+                if validate is True:
                     img_path = FILE_DIR+item['center'].lstrip()
                     img = cv2.imread(img_path)
                     angle = item['steering']
                 else:
+                    # random choice of image
                     choice = random.choice([('center', 0), ('left', 0.25),
                                            ('right', -0.25)])
-                    # img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
+                    img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
                     img_path = FILE_DIR+item[choice[0]].lstrip()
                     img = cv2.imread(img_path)
                     angle = item['steering']+choice[1]
+                    # if zero angle warp by a probability
                     if item['steering'] == 0:
-                        # do something
                         keep_prob = random.random()
-                        if keep_prob < 0.5:
-                            # get warped image 90% of time
+                        if keep_prob < 0.7:
+                            # get warped image x% of time
                             img, angle = warp_image(img, angle)
                     else:
+                        # if non zero angle random augmentation
                         prob_image = random.random()
                         if prob_image < 0.3:
                             img, angle = warp_image(img, angle)
                         elif prob_image < 0.6:
                             img, angle = flip_image(img, angle)
 
-                # convert image to RGB
+                # convert image to RGB to match drive.py
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 X_train.append(img)
                 y_train.append(angle)
@@ -216,7 +255,13 @@ def img_generator(X, batch_size=32, validate=False):
 
 
 def model1(X, y):
-    """ function to train model """
+    """
+        function to train model - over all data
+        Args:
+            X: training data
+            y: training labels
+    """
+
     model = Sequential()
     model.add(Lambda(lambda x: x/255.0 - 0.5,
               input_shape=(160, 320, 3)))
@@ -238,7 +283,12 @@ def model1(X, y):
 
 
 def model2(X_train, X_valid):
-    """ function to train model """
+    """
+        function to train model using first generator
+        Args:
+            X_train: training data
+            X_valid: validation data
+    """
 
     # create data generators
     X_gen_train = generate_data(X_train, batch_size=BATCH_SIZE)
@@ -269,7 +319,12 @@ def model2(X_train, X_valid):
 
 
 def model3(X_train, X_valid):
-    """ function to train model """
+    """
+        function to train model over final generator
+        Args:
+            X_train: training data
+            X_valid: validation data
+    """
 
     # create data generators
     X_gen_train = img_generator(X_train, batch_size=BATCH_SIZE)
@@ -302,6 +357,7 @@ def model3(X_train, X_valid):
 if __name__ == "__main__":
     """
         allows for different models and default model to be run
+        if incorrect model passed, error reported
     """
     if sys.argv[-1] == 'model1':
         train_data = read_data_from_file()
