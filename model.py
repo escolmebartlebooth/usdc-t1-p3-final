@@ -142,20 +142,20 @@ def generate_data(X, file_from="l", batch_size=32, validate=False):
             measurements = []
 
             # loop the batch
-            for item in batch_samples:
+            for index, item in batch_samples.iterrows():
                 # add centre image for zero angle
                 for i in range(3):
-                    # check whether data from windows or linux
-                    img_path = FILE_DIR+item[i].lstrip()
-                    img = cv2.imread(img_path)
-                    features.append(img)
                     if i == 0:
+                        img_path = 'center'
                         correction_factor = 0
                     elif i == 1:
-                        correction_factor = 0.2
+                        img_path = 'left'
+                        correction_factor = 0.25
                     else:
-                        correction_factor = -0.2
-                    measurements.append(float(item[3])+correction_factor)
+                        img_path = 'right'
+                        correction_factor = -0.25
+                    features.append(cv2.imread(FILE_DIR+item[img_path].lstrip()))
+                    measurements.append(float(item['steering'])+correction_factor)
 
             # now build augmented images
             aug_features, aug_measurements = [], []
@@ -238,7 +238,7 @@ def model1(X, y):
     model.save("model1.h5")
 
 
-def model3(X_train, X_valid):
+def model2(X_train, X_valid):
     """ function to train model """
 
     # create data generators
