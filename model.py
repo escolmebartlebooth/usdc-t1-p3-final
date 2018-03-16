@@ -29,8 +29,8 @@ CORRECTED_PATH = FILE_DIR + "IMG/"
 FILE_FROM = "l"
 
 # parameters for training
-NB_EPOCHS = 4
-BATCH_SIZE = 128
+NB_EPOCHS = 3
+BATCH_SIZE = 126
 
 def flip_image(img, angle):
     """
@@ -94,12 +94,7 @@ def transform_data(X, file_from="l"):
         # add centre, left and right images and adjust steering
         for i in range(3):
             # check whether data from windows or linux
-            if file_from == "w":
-                features.append(cv2.imread(CORRECTED_PATH +
-                                           item[i].split("\\")[-1]))
-            else:
-                features.append(cv2.imread(CORRECTED_PATH +
-                                           item[i].split("/")[-1]))
+            features.append(cv2.imread(FILE_DIR+item[i].lstrip()))
             if i == 0:
                 correction_factor = 0
             elif i == 1:
@@ -262,10 +257,10 @@ def model2(X_train, X_valid):
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
-                                  samples_per_epoch=len(X_train)*3,
+                                  samples_per_epoch=len(X_train)*6,
                                   nb_epoch=NB_EPOCHS,
                                   validation_data=X_gen_valid,
-                                  nb_val_samples=len(X_valid)*3)
+                                  nb_val_samples=len(X_valid)*6)
     model.save("model2.h5")
 
 
