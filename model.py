@@ -228,7 +228,6 @@ def img_generator(X, batch_size=32, validate=False):
                     # random choice of image
                     choice = random.choice([('center', 0), ('left', 0.25),
                                            ('right', -0.25)])
-                    img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
                     img_path = FILE_DIR+item[choice[0]].lstrip()
                     img = cv2.imread(img_path)
                     angle = item['steering']+choice[1]
@@ -361,7 +360,7 @@ if __name__ == "__main__":
     """
     if sys.argv[-1] == 'model1':
         train_data = read_data_from_file()
-        features, measurements = transform_data(train_data, FILE_FROM)
+        features, measurements = transform_data(train_data)
         model1(features, measurements)
     elif sys.argv[-1] == 'model2':
         df = pd.read_csv(FILE_DIR+DATA_FILE)
