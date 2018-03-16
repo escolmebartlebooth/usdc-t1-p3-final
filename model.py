@@ -29,8 +29,8 @@ CORRECTED_PATH = FILE_DIR + "IMG/"
 FILE_FROM = "l"
 
 # parameters for training
-NB_EPOCHS = 3
-BATCH_SIZE = 126
+NB_EPOCHS = 5
+BATCH_SIZE = 32
 
 def flip_image(img, angle):
     """
@@ -82,8 +82,7 @@ def read_data_from_file():
             else:
                 data_list.append(line)
 
-    train_data, validation_data = train_test_split(data_list, test_size=0.2)
-    return train_data, validation_data
+    return data_list
 
 
 def transform_data(X, file_from="l"):
@@ -105,12 +104,15 @@ def transform_data(X, file_from="l"):
 
     # now build augmented images
     aug_features, aug_measurements = [], []
+    i = 0
     for feature, measurement in zip(features, measurements):
         aug_features.append(feature)
         aug_measurements.append(measurement)
         # now also add a flipped image
-        aug_features.append(cv2.flip(feature, 1))
-        aug_measurements.append(measurement*-1.0)
+        if i % 2 == 0:
+            aug_features.append(cv2.flip(feature, 1))
+            aug_measurements.append(measurement*-1.0)
+        i += 1
 
     return np.array(aug_features), np.array(aug_measurements)
 
@@ -300,7 +302,7 @@ if __name__ == "__main__":
         allows for different models and default model to be run
     """
     if sys.argv[-1] == 'model1':
-        train_data, validation_data = read_data_from_file()
+        train_data = read_data_from_file()
         features, measurements = transform_data(train_data, FILE_FROM)
         model1(features, measurements)
     elif sys.argv[-1] == 'model2':
