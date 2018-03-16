@@ -350,7 +350,7 @@ def model3(X_train, X_valid):
                                   nb_epoch=NB_EPOCHS,
                                   validation_data=X_gen_valid,
                                   nb_val_samples=len(X_valid)*3)
-    model.save("model3.h5")
+    model.save("model.h5")
 
 
 if __name__ == "__main__":
