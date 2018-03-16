@@ -6,6 +6,7 @@
 """
 
 # imports section
+import sys
 import pandas as pd
 import numpy as np
 import cv2
@@ -30,7 +31,6 @@ FILE_FROM = "l"
 # parameters for training
 NB_EPOCHS = 4
 BATCH_SIZE = 128
-
 
 def flip_image(img, angle):
     """
@@ -63,52 +63,6 @@ def warp_image(img, angle):
     warped_image = cv2.warpAffine(img, transform_matrix, (w, h))
 
     return warped_image, angle
-
-
-def img_generator(X, batch_size=32, validate=False):
-
-    sample_size = len(X)
-
-    while 1:
-        shuffle(X)
-
-        for offset in range(0, sample_size, batch_size):
-
-            batch_samples = X[offset:offset+batch_size]
-
-            X_train = []
-            y_train = []
-
-            for index, item in batch_samples.iterrows():
-                # create data - if validate just pass the center image
-                if validate == True:
-                    img_path = FILE_DIR+item['center'].lstrip()
-                    img = cv2.imread(img_path)
-                    angle = item['steering']
-                else:
-                    choice = random.choice([('center', 0), ('left', 0.25),
-                                           ('right', -0.25)])
-                    # img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
-                    img_path = FILE_DIR+item[choice[0]].lstrip()
-                    img = cv2.imread(img_path)
-                    angle = item['steering']+choice[1]
-                    if item['steering'] == 0:
-                        # do something
-                        keep_prob = random.random()
-                        if keep_prob < 0.89:
-                            # get warped image 90% of time
-                            img, angle = warp_image(img, angle)
-                    else:
-                        prob_image = random.random()
-                        if prob_image < 0.3:
-                            img, angle = warp_image(img, angle)
-                        elif prob_image < 0.6:
-                            img, angle = flip_image(img, angle)
-
-                X_train.append(img)
-                y_train.append(angle)
-
-            yield shuffle(np.array(X_train), np.array(y_train))
 
 
 def read_data_from_file():
@@ -192,12 +146,9 @@ def generate_data(X, file_from="l", batch_size=32, validate=False):
                 # add centre image for zero angle
                 for i in range(3):
                     # check whether data from windows or linux
-                    if file_from == "w":
-                        features.append(cv2.imread(CORRECTED_PATH +
-                                                   item[i].split("\\")[-1]))
-                    else:
-                        features.append(cv2.imread(CORRECTED_PATH +
-                                                   item[i].split("/")[-1]))
+                    img_path = FILE_DIR+item[i].lstrip()
+                    img = cv2.imread(img_path)
+                    features.append(img)
                     if i == 0:
                         correction_factor = 0
                     elif i == 1:
@@ -219,7 +170,53 @@ def generate_data(X, file_from="l", batch_size=32, validate=False):
                           np.array(aug_measurements))
 
 
-def training_model(X, y):
+def img_generator(X, batch_size=32, validate=False):
+
+    sample_size = len(X)
+
+    while 1:
+        shuffle(X)
+
+        for offset in range(0, sample_size, batch_size):
+
+            batch_samples = X[offset:offset+batch_size]
+
+            X_train = []
+            y_train = []
+
+            for index, item in batch_samples.iterrows():
+                # create data - if validate just pass the center image
+                if validate == True:
+                    img_path = FILE_DIR+item['center'].lstrip()
+                    img = cv2.imread(img_path)
+                    angle = item['steering']
+                else:
+                    choice = random.choice([('center', 0), ('left', 0.25),
+                                           ('right', -0.25)])
+                    # img_path = CORRECTED_PATH+item[choice[0]].split('/')[-1]
+                    img_path = FILE_DIR+item[choice[0]].lstrip()
+                    img = cv2.imread(img_path)
+                    angle = item['steering']+choice[1]
+                    if item['steering'] == 0:
+                        # do something
+                        keep_prob = random.random()
+                        if keep_prob < 0.89:
+                            # get warped image 90% of time
+                            img, angle = warp_image(img, angle)
+                    else:
+                        prob_image = random.random()
+                        if prob_image < 0.3:
+                            img, angle = warp_image(img, angle)
+                        elif prob_image < 0.6:
+                            img, angle = flip_image(img, angle)
+
+                X_train.append(img)
+                y_train.append(angle)
+
+            yield shuffle(np.array(X_train), np.array(y_train))
+
+
+def model1(X, y):
     """ function to train model """
     model = Sequential()
     model.add(Lambda(lambda x: x/255.0 - 0.5,
@@ -238,10 +235,41 @@ def training_model(X, y):
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     model.fit(X, y, validation_split=0.2, shuffle=True, nb_epoch=5)
-    model.save("model.h5")
+    model.save("model1.h5")
 
 
-def gen_training_model(X_train, X_valid):
+def model3(X_train, X_valid):
+    """ function to train model """
+
+    # create data generators
+    X_gen_train = generate_data(X_train, batch_size=BATCH_SIZE)
+    X_gen_valid = generate_data(X_valid, batch_size=BATCH_SIZE,
+                                validate=False)
+
+    model = Sequential()
+    model.add(Lambda(lambda x: x/255.0 - 0.5,
+              input_shape=(160, 320, 3)))
+    model.add(Cropping2D(cropping=((70, 25), (0, 0))))
+    model.add(Convolution2D(6, 5, 5))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D())
+    model.add(Convolution2D(6, 5, 5))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D())
+    model.add(Flatten())
+    model.add(Dense(120))
+    model.add(Dense(84))
+    model.add(Dense(1))
+    model.compile(loss='mse', optimizer='adam')
+    history = model.fit_generator(X_gen_train,
+                                  samples_per_epoch=len(X_train)*3,
+                                  nb_epoch=NB_EPOCHS,
+                                  validation_data=X_gen_valid,
+                                  nb_val_samples=len(X_valid)*3)
+    model.save("model2.h5")
+
+
+def model3(X_train, X_valid):
     """ function to train model """
 
     # create data generators
@@ -269,13 +297,24 @@ def gen_training_model(X_train, X_valid):
                                   nb_epoch=NB_EPOCHS,
                                   validation_data=X_gen_valid,
                                   nb_val_samples=len(X_valid)*3)
-    model.save("model.h5")
+    model.save("model3.h5")
 
 
 if __name__ == "__main__":
-    # train_data, validation_data = read_data_from_file()
-    # features, measurements = transform_data(train_data, FILE_FROM)
-    # training_model(features, measurements)
-    df = pd.read_csv(FILE_DIR+DATA_FILE)
-    train_data, validation_data = train_test_split(df, test_size=0.2)
-    gen_training_model(train_data, validation_data)
+    """
+        allows for different models and default model to be run
+    """
+    if sys.argv[-1] == 'model1':
+        train_data, validation_data = read_data_from_file()
+        features, measurements = transform_data(train_data, FILE_FROM)
+        model1(features, measurements)
+    elif sys.argv[-1] == 'model2':
+        df = pd.read_csv(FILE_DIR+DATA_FILE)
+        train_data, validation_data = train_test_split(df, test_size=0.2)
+        model2(train_data, validation_data)
+    elif sys.argv[-1] == 'model3':
+        df = pd.read_csv(FILE_DIR+DATA_FILE)
+        train_data, validation_data = train_test_split(df, test_size=0.2)
+        model3(train_data, validation_data)
+    else:
+        print('model: {} not understood'.format(sys.argv[-1]))
