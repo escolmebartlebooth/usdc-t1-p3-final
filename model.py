@@ -207,6 +207,8 @@ def img_generator(X, batch_size=32, validate=False):
                         elif prob_image < 0.6:
                             img, angle = flip_image(img, angle)
 
+                # convert image to RGB
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 X_train.append(img)
                 y_train.append(angle)
 
