@@ -342,7 +342,9 @@ def model3(X_train, X_valid):
     model.add(MaxPooling2D())
     model.add(Flatten())
     model.add(Dense(120))
+    model.add(Dropout(0.8))
     model.add(Dense(84))
+    model.add(Dropout(0.8))
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
