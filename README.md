@@ -7,19 +7,17 @@ Date: March 2018
 
 **Preamble**
 
-This has been a very hard project for me, although it turns out that it was hard only because I suffered from a confirmation bias that drew me away from 2 very important facts which, once discovered, made the training of the model easy enough to complete for the first track. The 2 facts were:
-* the drive.py program uses RGB and so i should convert my training data to that format
-* the simulator eats up system resources and this affects model performance when testing...so much so, that after a disappointingly long time, once scaled back to 800x600 and simple graphics, the model i had trained 3 weeks earlier....worked.
+This has been a difficult project for me. It turns out that it was difficult because I didn't consider 2 very important facts which, once discovered, made the training of the model easy enough to complete for the first track.
 
-This was more galling for the fact I had attended the Udacity / Parkopedia meet-up in London and talked about the simulator with Dave and Aaron.......
+The 2 facts were:
+* the drive.py program uses RGB and so i should convert my training data to that format as cv2 default opens BGR.
+* the simulator eats up system resources and this affects model performance when testing, so much so, that after a number of weeks, once scaled back to 800x600 and simple graphics, the model i had trained 3 weeks earlier worked. This was more galling for the fact I had attended the Udacity / Parkopedia meet-up in London and talked about the simulator with Dave and Aaron.
 
-As well as the meetup, I am indebted to the blogs and forums of other Udacity students who have attempted this project, in particular:
+As well as the meetup, I am indebted to the blogs and forums of other Udacity students who have attempted this project for their discussion on augmented image generation and balancing of zero v non-zero angle data, in particular:
 
 + https://github.com/georgesung/behavioral_cloning
 + https://medium.com/@dhanoopkarunakaran/147-lines-of-code-to-drive-vehicle-autonomously-around-the-track-in-simulator-c22bcf05f0bb
 + https://towardsdatascience.com/behavioural-cloning-applied-to-self-driving-car-on-a-simulated-track-5365e1082230
-
-for their discussion on augmented image generation and balancing of zero v non-zero angle data.
 
 I have run out of time to work on a more sophisticated model but will come back to this project to get onto testing out the second track.
 
@@ -85,7 +83,7 @@ In addition, model.py was assessed against Python Coding standards at:
 I would like to acknowledge both the primer videos from the Udacity course and also the following paper which have both heavily influenced my approach to creating a useful model for this project:
 * http://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf
 
-In the end i used a simple 2 layer convolutional model with max pooling and no drop out with 3 fully connected layers. This, in the end, was due to the issues noted in the preamble and a lack of time to go back to the nvidia model i had struggled with.
+In the end I used a simple 2 layer convolutional model with max pooling and no drop out with 3 fully connected layers. This was due to the issues noted in the preamble and a lack of time to go back to the nvidia model I had struggled with.
 
 The model suggested by nvidia consists of:
 * a normalisation layer
@@ -95,7 +93,7 @@ The model suggested by nvidia consists of:
 * the output is then flattened and followed by 3 dense layers
 * the model uses the adam optimiser and a loss function of mean squared error
 
-My model was:
+My final model was:
 * a normalisation layer
 * cropping layer
 * 1st convolutional layer with 6 filters and a 5 x 5 pattern with pooling and relu
@@ -107,12 +105,12 @@ My model was:
 
 #### 2. Attempts to reduce overfitting in the model
 
-In the model submission i did not need to use DropOut to find a working test lap but I used a number of augmentations over the training data:
+In the model submission i did not need to use drop out to find a working test lap but I used a number of augmentations over the training data:
 * random selection of center, left, right image
 * balancing the data away from high zero angle frequency by only taking in 30% of zero angle center image un-warped
 * warping all other zero angle center images
 * randomly flipping or warping each non-zero image by 180 degrees and adjusting the steering angle
-* when using the left and right camera images from the simulator and adjusting the steering angle by 0.2
+* when using the left and right camera images from the simulator and adjusting the steering angle by 0.25
 * using recovery laps on sections of the course the model struggled with
 
 I retained 20% of the training data to be used as a validation data set.
@@ -125,7 +123,7 @@ The most significant tuning, though, came through using a balanced dataset, tuni
 
 #### 4. Appropriate training data
 
-I used the Udacity provided training data as it seemed to be more 'stable' and was a readily available source. As mentioned above, to reduce the high zero steering angles, augmentation on that data sat was carried out.
+I used the Udacity provided training data as it seemed to be a ready source of smooth driving. As mentioned above, to reduce the high zero steering angles, augmentation on that data sat was carried out.
 
 I also recorded my own steeper angle recovery data around the section of the course after the bridge where my model was not performing well.
 
@@ -139,15 +137,19 @@ This model drove well until after the bridge where it tracked straight off the c
 
 ![alt text][image2]
 
-This showed a very large volume of zero angled data which would bias the model - even after my first attempts at augmentation, to drive straight. So, i recorded my own recovery images from the second half of the track to try to have the car respond better in that section.
+This showed a very large volume of zero angled data which would bias the model. So, i recorded my own recovery images from the second half of the track to try to have the car respond better in that section.
 
-This didn't work so well as the car continued to drive off the track at the same point. I then decided to try and balance and randomise the data set even more (following on from the blogs i had read) by making random selections of camera angles from the training data and then reducing the zero angle images even more by warping 70% of the zero angle center images chosen. For the remaining images, i randomly applied a flip or a warp or no augmentation.
+![alt text][image5]
 
-The histogram of 9 batches of 32 are shown below:
+This didn't work so well as the car continued to drive off the track at the same point. I then decided to try and balance and randomise the data set even more (following on from the blogs i had read) by making random selections of camera angles from the training data and then reducing the zero angle images even more by warping 70% of the zero angle center images chosen. For the remaining images, I randomly applied a flip or a warp or no augmentation.
+
+![alt text][image4]
+
+The histogram of 9 batches of 32 from the final augmentation are shown below. These show a more balanced steering angle distribution:
 
 ![alt text][image3]
 
-This model, using 5 epochs (where validation loss settled) and a batch size of 32 (the default), drove round the 1st track with no problem.
+This model, using 5 epochs (where validation loss settled) and a batch size of 32 (the default), drove round the 1st track with no problems.
 
 The model does not perform well on the second track and i believe i need more data to cope better with shadows and steeper curves and possibly a better model similar to the nvidia model described above.
 
@@ -158,15 +160,3 @@ The final model architecture consisted of a convolution neural network with the 
 Here is a visualization of the architecture
 
 ![alt text][image1]
-
-#### 3. Creation of the Training Set & Training Process
-
-To capture good driving behavior, I used the Udacity data:
-
-I then recorded the vehicle recovering from the left side and right sides of the road back to center so that the vehicle would learn to navigate between the roadside verges and not continue straight when no verge existed:
-
-![alt text][image5]
-
-To augment the data sat, I used a randomised approach to flipping and warping images and angles. This was inspired by my reading as acknowledged above and was expected to provide more balanced data (flipping) and more examples of verge-side avoidance (warping):
-
-![alt text][image4]
