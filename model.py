@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 import random
 from keras.layers import Activation, Dense, Flatten, Lambda, Cropping2D
-from keras.layers import Convolution2D
+from keras.layers import Convolution2D, Dropout
 from keras.layers import MaxPooling2D
 from keras.models import Sequential
 
