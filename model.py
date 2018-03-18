@@ -234,7 +234,7 @@ def img_generator(X, batch_size=32, validate=False):
                     # if zero angle warp by a probability
                     if item['steering'] == 0:
                         keep_prob = random.random()
-                        if keep_prob < 0.7:
+                        if keep_prob < 0.9:
                             # get warped image x% of time
                             img, angle = warp_image(img, angle)
                     else:
@@ -342,9 +342,9 @@ def model3(X_train, X_valid):
     model.add(MaxPooling2D())
     model.add(Flatten())
     model.add(Dense(120))
-    model.add(Dropout(0.8))
+    model.add(Dropout(0.5))
     model.add(Dense(84))
-    model.add(Dropout(0.8))
+    model.add(Dropout(0.5))
     model.add(Dense(1))
     model.compile(loss='mse', optimizer='adam')
     history = model.fit_generator(X_gen_train,
