@@ -2,6 +2,9 @@
 
 Author: David Escolme
 Date: March 2018
+Updated after review: 18-03-18
+Updates:
+* added drop out to model to try to generalise on second track
 
 ---
 
@@ -160,3 +163,12 @@ The final model architecture consisted of a convolution neural network with the 
 Here is a visualization of the architecture
 
 ![alt text][image1]
+
+### Post review updates
+
+Feedback from review was to add drop out to model so that the 1st track wouldn't be overfitted and perhaps to obtain better generalisation on the 2nd track. The following steps and tests were undertaken:
+
+* added drop out of 0.8 to each fully connected layer of the model - this resulted in the car failing to complete the first track
+* dialled back drop out to 0.5 and increased the probability of warping zero angle images from 0.7 to 0.9 - this resulted in the car completing the first track but not going well on the second track
+
+To get the car to generalise on the second track I think I would have to experiment with more augmentation (to generate more images and more images with different facets) to mirror the steeper turns and shadows that appear more often on that track and also to experiment with the more sophisticated models like Nvidia or comma.ai
